@@ -53,4 +53,4 @@ This project is licensed under the `GNU General Public License (GPL)`. For more 
 
 For questions or suggestions, please reach out:
 
-- Email: 
+- Email: info@berkyasar.dev
