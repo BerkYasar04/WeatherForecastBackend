@@ -1,0 +1,6 @@
+@WebAPI_HostAddress = http://localhost:5207/wfapi
+
+GET {{WebAPI_HostAddress}}/weatherforecast/GetProvinces
+Accept: application/json
+
+###
