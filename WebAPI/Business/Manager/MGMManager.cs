@@ -80,6 +80,56 @@ namespace WebAPI.Business.Manager
             var result = JsonConvert.DeserializeObject<List<TLatestEvent>>(jsonResponse);
             return new SuccessDataResult<List<TLatestEvent>>(result!);
         }
+        public async Task<IDataResult<List<RDistrict>>> GetDistricts(string province, string? filter)
+        {
+            var dic = new Dictionary<string, string>
+            {
+                { "il", ChangeTurkishCharacter(province) }
+            };
+            var url = BuildUrlWithQueryString(MGMUrl.DistrictUrl, dic);
+            using HttpResponseMessage response = await _httpClient.GetAsync(url);
+            if (!response.IsSuccessStatusCode)
+            {
+                //return 
+            }
+            var jsonResponse = await response.Content.ReadAsStringAsync();
+            var result = JsonConvert.DeserializeObject<List<TDistrict>>(jsonResponse);
+            result = [.. result.OrderBy(x => x.merkezId)];
+
+            if (filter != null && filter != "")
+            {
+                var filteredList = new List<TDistrict>();
+                foreach (var item in result)
+                {
+                    if (item.ilce.Contains(filter)) filteredList.Add(item);
+                }
+                result = filteredList;
+            }
+
+            var mappedList = new List<RDistrict>();
+            foreach (var district in result)
+            {
+                var latestEvent = (await GetLastestEvent(district.merkezId)).SuccessData[0];
+                var extEvent = ConvertEventCode(latestEvent.hadiseKodu);
+                var mappedProvince = new RDistrict
+                {
+                    Province = district.il,
+                    District = district.ilce,
+                    MerkezId = district.merkezId,
+                    CurrentPressure = latestEvent.aktuelBasinc,
+                    Event = extEvent,
+                    EventCode = latestEvent.hadiseKodu,
+                    Humidity = latestEvent.nem,
+                    SeaLevelPressure = latestEvent.denizeIndirgenmisBasinc,
+                    Temperature = latestEvent.sicaklik,
+                    WindSpeed = latestEvent.ruzgarHiz,
+                    Precipitation = latestEvent.yagis00Now
+                };
+                mappedList.Add(mappedProvince);
+            }
+
+            return new SuccessDataResult<List<RDistrict>>(mappedList);
+        }
 
         private static string ConvertEventCode(string eventCode)
         {
@@ -105,6 +155,25 @@ namespace WebAPI.Business.Manager
                 queryParams.Select(kvp => $"{HttpUtility.UrlEncode(kvp.Key)}={HttpUtility.UrlEncode(kvp.Value)}"));
 
             return $"{basePath}?{queryString}";
+        }
+        private static string ChangeTurkishCharacter(string str)
+        {
+            var chs = str.ToLower().Select(c => c.ToString());
+            var mapped = "";
+            foreach (var ch in chs)
+            {
+                mapped += ch switch
+                {
+                    "ö" => "o",
+                    "ü" => "u",
+                    "ğ" => "g",
+                    "ç" => "c",
+                    "ı" => "i",
+                    "ş" => "s",
+                    _ => ch,
+                };
+            }
+            return mapped;
         }
     }
 }

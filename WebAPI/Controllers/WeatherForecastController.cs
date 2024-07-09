@@ -20,5 +20,16 @@ namespace WebAPI.Controllers
             }
             return Ok(result.SuccessData);
         }
+
+        [HttpGet("GetDistricts")]
+        public async Task<ActionResult<IEnumerable<RDistrict>>> GetDistricts([FromQuery] string province, string? filter)
+        {
+            var result = await _mgmService.GetDistricts(province, filter);
+            if (!result.Result)
+            {
+                return BadRequest();
+            }
+            return Ok(result.SuccessData);
+        }
     }
 }
